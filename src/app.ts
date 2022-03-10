@@ -1,3 +1,37 @@
+interface Validatable {
+	value: string | number;
+	required?: boolean; // optional
+	minLength?: number;
+	maxLength?: number;
+	min?: number; // optional
+	max?: number;
+}
+
+const validate = (config: Validatable) => {
+	const { value, required, minLength, maxLength, min, max } = config;
+	let isValid = true;
+	if (required) {
+		isValid = isValid && value.toString().trim().length !== 0;
+	}
+
+	if (minLength && typeof minLength === 'number') {
+		isValid = isValid && value.toString().trim().length >= minLength;
+	}
+
+	if (maxLength && typeof maxLength === 'number') {
+		isValid = isValid && value.toString().trim().length <= maxLength;
+	}
+
+	if (min && typeof min === 'number') {
+		isValid = isValid && value >= min;
+	}
+
+	if (max && typeof max === 'number') {
+		isValid = isValid && value <= max;
+	}
+	return isValid;
+};
+
 const AutoBind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
 	const originalMethod = descriptor.value;
 	return {
@@ -36,7 +70,11 @@ class ProjectInput {
 		const desc = this.descriptionEl.value;
 		const people = this.peopleEl.value;
 
-		if (title.trim().length === 0 || desc.trim().length === 0 || people.trim().length === 0) {
+		if (
+			!validate({ value: title, required: true }) ||
+			!validate({ value: desc, required: true, minLength: 5 }) ||
+			!validate({ value: people, required: true, min: 1, max: 5 })
+		) {
 			alert('Invalid input, please try again!');
 			return;
 		} else {
