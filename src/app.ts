@@ -123,7 +123,15 @@ class ProjectList {
 
 	private renderProjects() {
 		const ulEl = document.getElementById(`${this.type}-project-list`) as HTMLUListElement;
-		for (const project of this.assignedProjects) {
+		const activeProjects = this.assignedProjects.filter((i: Project) => {
+			if (this.type === 'active') {
+				return i.status === ProjectStatus.Active;
+			}
+			return i.status === ProjectStatus.Finished;
+		});
+
+		ulEl.innerHTML = '';
+		for (const project of activeProjects) {
 			const li = document.createElement('li');
 			li.textContent = project.title;
 			ulEl.appendChild(li);
