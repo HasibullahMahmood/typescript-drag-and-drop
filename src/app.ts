@@ -1,3 +1,38 @@
+class ProjectsState {
+	listeners: Function[] = [];
+	projects: any[] = [];
+	private static instance: ProjectsState;
+
+	private constructor() {}
+
+	static getInstance() {
+		if (!this.instance) {
+			this.instance = new ProjectsState();
+		}
+		return this.instance;
+	}
+
+	addListener(cb: Function) {
+		this.listeners.push(cb);
+	}
+
+	addProject(title: string, description: string, people: number) {
+		const newProject = {
+			id: Math.random().toString(),
+			title,
+			description,
+			people,
+		};
+		this.projects.push(newProject);
+
+		for (const listener of this.listeners) {
+			listener(this.projects.slice());
+		}
+	}
+}
+
+const projectsState = ProjectsState.getInstance();
+
 interface Validatable {
 	value: string | number;
 	required?: boolean; // optional
@@ -42,6 +77,48 @@ const AutoBind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
 		},
 	};
 };
+
+class ProjectList {
+	templateEl: HTMLTemplateElement;
+	sectionEl: HTMLElement;
+	hostEl: HTMLDivElement;
+	assignedProjects: any[] = [];
+
+	constructor(private type: 'active' | 'finished') {
+		this.templateEl = document.getElementById('project-list') as HTMLTemplateElement;
+		this.hostEl = document.getElementById('app') as HTMLDivElement;
+		const importedNode = document.importNode(this.templateEl.content, true);
+		this.sectionEl = importedNode.firstElementChild as HTMLElement;
+
+		this.sectionEl.id = `${type}-projects`;
+		projectsState.addListener((projects: any[]) => {
+			this.assignedProjects = projects;
+			this.renderProjects();
+		});
+		this.attach();
+		this.renderContent();
+	}
+
+	private attach() {
+		this.hostEl.insertAdjacentElement('beforeend', this.sectionEl);
+	}
+
+	private renderContent() {
+		const listId = `${this.type}-project-list`;
+		this.sectionEl.querySelector('ul')!.id = listId;
+
+		this.sectionEl.querySelector('h2')!.textContent = `${this.type.toUpperCase()} PROJECTS LIST`;
+	}
+
+	private renderProjects() {
+		const ulEl = document.getElementById(`${this.type}-project-list`) as HTMLUListElement;
+		for (const project of this.assignedProjects) {
+			const li = document.createElement('li');
+			li.textContent = project.title;
+			ulEl.appendChild(li);
+		}
+	}
+}
 
 class ProjectInput {
 	templateEl: HTMLTemplateElement;
@@ -95,7 +172,7 @@ class ProjectInput {
 
 		if (Array.isArray(inputs)) {
 			const [title, desc, people] = inputs;
-			console.log(title, desc, people);
+			projectsState.addProject(title, desc, people);
 			this.clearInputs();
 		}
 	}
@@ -109,3 +186,6 @@ class ProjectInput {
 }
 
 const prjInput = new ProjectInput();
+
+const activePrjList = new ProjectList('active');
+const finishedPrjList = new ProjectList('finished');
